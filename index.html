@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bench &mdash; Campus Resource Hub</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔬</text></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+<div class="frame">
+
+  <!-- ===== Left control rail ===== -->
+  <aside class="rail">
+    <div class="rail-brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22"><path d="M2 14 L7 14 L9 6 L13 20 L15 14 L22 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <span class="brand-name">Bench</span>
+    </div>
+    <nav class="rail-nav" id="railNav">
+      <button class="nav-item is-active" data-view="request">
+        <span class="nav-tick">01</span> Request
+      </button>
+      <button class="nav-item" data-view="discover">
+        <span class="nav-tick">02</span> Discover
+      </button>
+      <button class="nav-item" data-view="peers">
+        <span class="nav-tick">03</span> Find a person
+      </button>
+      <button class="nav-item" data-view="bookings">
+        <span class="nav-tick">04</span> My requests
+      </button>
+      <button class="nav-item" data-view="approvals">
+        <span class="nav-tick">05</span> Approvals
+        <span class="pill pill-count" id="approvalCount" hidden>0</span>
+      </button>
+      <button class="nav-item" data-view="hackathon">
+        <span class="nav-tick">06</span> Hackathon
+      </button>
+      <button class="nav-item" data-view="scan">
+        <span class="nav-tick">07</span> Scan &amp; verify
+      </button>
+      <button class="nav-item" data-view="demo">
+        <span class="nav-tick">08</span> Guided demo
+      </button>
+    </nav>
+    <div class="rail-foot">
+      <button class="bell" id="bellBtn" aria-label="Notifications">
+        <svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 3a5 5 0 0 0-5 5v3.3c0 .6-.2 1.2-.6 1.7L5 15h14l-1.4-2c-.4-.5-.6-1.1-.6-1.7V8a5 5 0 0 0-5-5Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9.5 18a2.5 2.5 0 0 0 5 0" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+        <span class="pill pill-count" id="notifCount" hidden>0</span>
+      </button>
+      <div class="signed-in-as">Priya Nair &middot; ECE&apos;27</div>
+    </div>
+  </aside>
+
+  <!-- ===== Main stage ===== -->
+  <main class="stage">
+
+    <header class="trace-strip" aria-hidden="true">
+      <svg id="traceSvg" viewBox="0 0 800 60" preserveAspectRatio="none"><polyline id="tracePoly" points="" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+    </header>
+
+    <div class="notif-drawer" id="notifDrawer" hidden>
+      <div class="notif-drawer-head">
+        <span>Status updates</span>
+        <button id="notifClear" class="link-btn">Clear</button>
+      </div>
+      <div class="notif-list" id="notifList"></div>
+    </div>
+
+    <!-- 1. Request Interface -->
+    <section class="view is-active" id="view-request">
+      <div class="view-head">
+        <h1>What do you need, and by when?</h1>
+        <p class="view-sub">Describe it the way you'd tell a friend. Bench figures out the rest.</p>
+      </div>
+
+      <form id="requestForm" class="request-form">
+        <textarea id="requestInput" rows="3" placeholder="e.g. I need an oscilloscope tomorrow morning for a lab report, or a quiet room to record a podcast tonight" maxlength="240"></textarea>
+        <div class="request-form-row">
+          <div class="chip-row" id="exampleChips">
+            <button type="button" class="chip" data-example="I need an oscilloscope tomorrow morning, urgent">oscilloscope tomorrow</button>
+            <button type="button" class="chip" data-example="Looking for a quiet study room this evening">quiet room tonight</button>
+            <button type="button" class="chip" data-example="Need someone who knows PCB soldering this week">solder mentor</button>
+            <button type="button" class="chip" data-example="Need the 3D printer in the Maker Lab by Friday">3D printer by Friday</button>
+          </div>
+          <button type="submit" class="btn btn-primary">Parse request</button>
+        </div>
+      </form>
+
+      <div class="parsed-panel" id="parsedPanel" hidden>
+        <div class="panel-label">Intent Parser output</div>
+        <div class="parsed-grid">
+          <div><span>Resource type</span><strong id="p-type">&mdash;</strong></div>
+          <div><span>Category</span><strong id="p-category">&mdash;</strong></div>
+          <div><span>Time window</span><strong id="p-time">&mdash;</strong></div>
+          <div><span>Urgency</span><strong id="p-urgency">&mdash;</strong></div>
+        </div>
+        <button class="btn btn-ghost" id="goToResults">See matches &nbsp;&rarr;</button>
+      </div>
+    </section>
+
+    <!-- 2. Discovery & Matching -->
+    <section class="view" id="view-discover">
+      <div class="view-head">
+        <h1>Matches for your request</h1>
+        <p class="view-sub" id="discoverSub">Ranked by relevance, availability, and how close it is to you.</p>
+      </div>
+
+      <div class="filter-bar">
+        <label class="toggle">
+          <input type="checkbox" id="availOnly" checked>
+          <span>Only show what's free right now</span>
+        </label>
+        <label class="toggle">
+          <input type="checkbox" id="nearbyFirst" checked>
+          <span>Prioritize nearby buildings</span>
+        </label>
+        <select id="categoryFilter">
+          <option value="all">All categories</option>
+          <option value="equipment">Equipment</option>
+          <option value="space">Spaces</option>
+          <option value="skill">Skills &amp; mentors</option>
+        </select>
+      </div>
+
+      <div class="result-grid" id="resultGrid"></div>
+    </section>
+
+    <!-- 3. Peer / Skill matching -->
+    <section class="view" id="view-peers">
+      <div class="view-head">
+        <h1>Find a person, not a thing</h1>
+        <p class="view-sub">Mentors, teammates, and club leads who've listed what they can help with.</p>
+      </div>
+      <div class="chip-row" id="skillChips"></div>
+      <div class="result-grid" id="peerGrid"></div>
+    </section>
+
+    <!-- 4. Bookings / student status tracker -->
+    <section class="view" id="view-bookings">
+      <div class="view-head">
+        <h1>My requests</h1>
+        <p class="view-sub">Live status on everything you've asked to borrow, book, or learn.</p>
+      </div>
+      <div class="booking-list" id="bookingList"></div>
+    </section>
+
+    <!-- 5. Owner approval dashboard -->
+    <section class="view" id="view-approvals">
+      <div class="view-head">
+        <h1>Approvals</h1>
+        <p class="view-sub">You're listed as the owner or supervisor for these resources.</p>
+      </div>
+      <div class="approval-list" id="approvalList"></div>
+    </section>
+
+    <!-- 6. Hackathon registration -->
+    <section class="view" id="view-hackathon">
+      <div class="view-head">
+        <h1>HackNorth registration</h1>
+        <p class="view-sub">Register your team, and Bench works out exactly which permissions your plan needs.</p>
+      </div>
+
+      <form class="hack-form" id="hackForm">
+        <div class="field-row">
+          <label>Team name<input type="text" id="h-team" placeholder="Nightshift Robotics" required></label>
+          <label>Track<select id="h-track">
+            <option>Hardware</option>
+            <option>Software</option>
+            <option>Robotics</option>
+            <option>Biotech</option>
+          </select></label>
+        </div>
+        <label>Members (comma separated)<input type="text" id="h-members" placeholder="Priya Nair, Arjun Rao, Dev Malhotra" required></label>
+
+        <fieldset class="check-fieldset">
+          <legend>What will your team need on-site?</legend>
+          <label class="check"><input type="checkbox" value="3dprinter"> 3D printer access</label>
+          <label class="check"><input type="checkbox" value="overnight"> Overnight lab access</label>
+          <label class="check"><input type="checkbox" value="robotics"> Robotics lab bench</label>
+          <label class="check"><input type="checkbox" value="highvoltage"> High-voltage equipment</label>
+          <label class="check"><input type="checkbox" value="chemsupplies"> Chemical / biotech supplies</label>
+          <label class="check"><input type="checkbox" value="externalguest"> A non-student teammate on campus</label>
+        </fieldset>
+
+        <button type="submit" class="btn btn-primary">Register team</button>
+      </form>
+
+      <div class="perm-panel" id="permPanel" hidden>
+        <div class="panel-label">Permissions &amp; details required</div>
+        <ul class="perm-list" id="permList"></ul>
+      </div>
+
+      <div class="reg-card" id="regCard" hidden>
+        <div class="reg-card-info">
+          <div class="panel-label">Registration confirmed</div>
+          <div class="reg-id" id="regId">&mdash;</div>
+          <div class="reg-team" id="regTeamLine">&mdash;</div>
+          <p class="reg-note">Show this QR code at the HackNorth check-in desk. Faculty will scan it under <em>Scan &amp; verify</em>.</p>
+        </div>
+        <div class="qr-box" id="regQr"></div>
+      </div>
+    </section>
+
+    <!-- 7. Scan & verify (faculty side) -->
+    <section class="view" id="view-scan">
+      <div class="view-head">
+        <h1>Scan &amp; verify</h1>
+        <p class="view-sub">For faculty and owners: scan a student's booking or hackathon QR code to confirm it on the spot.</p>
+      </div>
+
+      <div class="scan-layout">
+        <div class="scan-camera">
+          <div id="qrReader"></div>
+          <button class="btn btn-ghost" id="scanToggle">Start camera</button>
+          <p class="scan-hint">No camera handy? Paste a code's ID below instead.</p>
+          <div class="manual-check">
+            <input type="text" id="manualCode" placeholder="e.g. BR-2481 or HK-7702">
+            <button class="btn btn-secondary" id="manualCheckBtn">Verify</button>
+          </div>
+        </div>
+        <div class="scan-result" id="scanResult">
+          <p class="scan-placeholder">Scan result will appear here.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8. Guided demo -->
+    <section class="view" id="view-demo">
+      <div class="view-head">
+        <h1>Guided demo &mdash; the oscilloscope, end to end</h1>
+        <p class="view-sub">Watch a request travel through every part of the system, automatically.</p>
+      </div>
+      <button class="btn btn-primary" id="runDemo">Play the demo</button>
+      <ol class="demo-log" id="demoLog"></ol>
+    </section>
+
+  </main>
+</div>
+
+<!-- Booking modal -->
+<div class="modal-backdrop" id="bookingModal" hidden>
+  <div class="modal">
+    <button class="modal-close" id="closeBooking" aria-label="Close">&times;</button>
+    <div class="panel-label">Request this resource</div>
+    <h2 id="bm-title">&mdash;</h2>
+    <p class="modal-owner" id="bm-owner"></p>
+    <label>Choose a slot
+      <select id="bm-slot"></select>
+    </label>
+    <label>Reason (shown to the owner)
+      <input type="text" id="bm-reason" placeholder="e.g. Lab report due Thursday">
+    </label>
+    <button class="btn btn-primary" id="bm-confirm">Send request</button>
+  </div>
+</div>
+
+<!-- Confirmation / QR modal -->
+<div class="modal-backdrop" id="qrModal" hidden>
+  <div class="modal modal-qr">
+    <button class="modal-close" id="closeQr" aria-label="Close">&times;</button>
+    <div class="panel-label" id="qrModalLabel">Request sent</div>
+    <h2 id="qr-title">&mdash;</h2>
+    <p id="qr-sub"></p>
+    <div class="qr-box" id="qr-box"></div>
+    <p class="qr-caption">Owner scans this at <em>Scan &amp; verify</em> to approve on the spot.</p>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
